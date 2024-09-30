@@ -84,17 +84,18 @@ class Individual:
             # Extract game state features
             game_state = self.extract_game_state(game)  # Implement this method
 
-        # Convert game state to TensorFlow tensor and perform a forward pass
-        game_state_tensor = tf.convert_to_tensor([game_state], dtype=tf.float32)
-        predictions = self.model(game_state_tensor, training=False)
-        
-        # Interpret predictions to decide on an action
-        action_index = tf.argmax(predictions, axis=1).numpy()[0]
-        
-        # Convert action_index to (block_index, x, y)
-        action = self.map_action_index(action_index, game)  # Implement this method
-        
-        return action
+        with tf.device('/GPU:0'):  # Explicitly assign the model to GPU:0
+            # Convert game state to TensorFlow tensor and perform a forward pass
+            game_state_tensor = tf.convert_to_tensor([game_state], dtype=tf.float32)
+            predictions = self.model(game_state_tensor, training=False)
+            
+            # Interpret predictions to decide on an action
+            action_index = tf.argmax(predictions, axis=1).numpy()[0]
+            
+            # Convert action_index to (block_index, x, y)
+            action = self.map_action_index(action_index, game)  # Implement this method
+            
+            return action
 
     def extract_game_state(self, game):
         """
@@ -193,28 +194,29 @@ class GeneticAlgorithm:
             game_state = self.get_game_state(individual)
             inputs.append(game_state)
         
-        # Convert inputs to a TensorFlow tensor
-        inputs_tensor = tf.convert_to_tensor(inputs, dtype=tf.float32)
-        
-        # Perform a batch forward pass on the GPU
-        # 여기서는 각 개체의 모델을 개별적으로 실행하지만, 더 최적화할 수 있습니다.
-        predictions = []
-        for i, individual in enumerate(self.population):
-            prediction = individual.model(inputs_tensor[i:i+1])[0]
-            predictions.append(prediction)
-        predictions = tf.stack(predictions)
-        
-        # Assign fitness based on predictions; define how predictions map to fitness
-        # 여기서는 단순히 게임을 시뮬레이션하여 피트니스를 할당합니다.
-        for individual in self.population:
-            individual.fitness = self.simulate_game(individual)  # Implement this method based on your Game class
-        
-        # Compute statistics
-        with self.lock:
-            scores = [ind.fitness for ind in self.population]
-            self.best_score = max(scores)
-            self.min_score = min(scores)
-            self.average_score = sum(scores) / len(scores)
+        with tf.device('/GPU:0'):  # Explicitly assign the model to GPU:0
+            # Convert inputs to a TensorFlow tensor
+            inputs_tensor = tf.convert_to_tensor(inputs, dtype=tf.float32)
+            
+            # Perform a batch forward pass on the GPU
+            # 여기서는 각 개체의 모델을 개별적으로 실행하지만, 더 최적화할 수 있습니다.
+            predictions = []
+            for i, individual in enumerate(self.population):
+                prediction = individual.model(inputs_tensor[i:i+1])[0]
+                predictions.append(prediction)
+            predictions = tf.stack(predictions)
+            
+            # Assign fitness based on predictions; define how predictions map to fitness
+            # 여기서는 단순히 게임을 시뮬레이션하여 피트니스를 할당합니다.
+            for individual in self.population:
+                individual.fitness = self.simulate_game(individual)  # Implement this method based on your Game class
+            
+            # Compute statistics
+            with self.lock:
+                scores = [ind.fitness for ind in self.population]
+                self.best_score = max(scores)
+                self.min_score = min(scores)
+                self.average_score = sum(scores) / len(scores)
 
     def select_parents(self):
         # Tournament selection example
@@ -236,20 +238,21 @@ class GeneticAlgorithm:
         return child
 
     def mutate(self, individual):
-        # Convert weights to TensorFlow tensor for GPU operations
-        weights = tf.convert_to_tensor(individual.get_weights_flat(), dtype=tf.float32)
-        
-        # Create a mutation mask using TensorFlow operations
-        mutation_mask = tf.random.uniform(shape=weights.shape) < self.mutation_rate
-        
-        # Generate Gaussian noise for mutation
-        noise = tf.random.normal(shape=weights.shape, mean=0.0, stddev=0.1)
-        
-        # Apply mutations where the mask is True
-        mutated_weights = tf.where(mutation_mask, weights + noise, weights)
-        
-        # Update the individual's weights
-        individual.set_weights_flat(mutated_weights.numpy())
+        with tf.device('/GPU:0'):  # Explicitly assign the model to GPU:0
+            # Convert weights to TensorFlow tensor for GPU operations
+            weights = tf.convert_to_tensor(individual.get_weights_flat(), dtype=tf.float32)
+            
+            # Create a mutation mask using TensorFlow operations
+            mutation_mask = tf.random.uniform(shape=weights.shape) < self.mutation_rate
+            
+            # Generate Gaussian noise for mutation
+            noise = tf.random.normal(shape=weights.shape, mean=0.0, stddev=0.1)
+            
+            # Apply mutations where the mask is True
+            mutated_weights = tf.where(mutation_mask, weights + noise, weights)
+            
+            # Update the individual's weights
+            individual.set_weights_flat(mutated_weights.numpy())
 
     def create_next_generation(self):
         new_population = []
