@@ -118,7 +118,7 @@ class Individual:
         return valid_moves[action_index % len(valid_moves)]
 
 class GeneticAlgorithm:
-    def __init__(self, pop_size=20, generations=1000, games=None, gui=None, mutation_rate=0.2):
+    def __init__(self, pop_size=20, generations=1000, games=None, gui=None, mutation_rate=0.4):
         self.pop_size = pop_size
         self.generations = generations
         self.population = [Individual() for _ in range(pop_size)]
@@ -238,41 +238,42 @@ class GeneticAlgorithm:
         return child
 
     def mutate(self, individual):
-        with tf.device('/GPU:0'):  # Explicitly assign the model to GPU:0
-            # Convert weights to TensorFlow tensor for GPU operations
+        with tf.device('/GPU:0'):  # GPU 할당 유지
+            # 가중치를 TensorFlow 텐서로 변환
             weights = tf.convert_to_tensor(individual.get_weights_flat(), dtype=tf.float32)
             
-            # Create a mutation mask using TensorFlow operations
             mutation_mask = tf.random.uniform(shape=weights.shape) < self.mutation_rate
             
-            # Generate Gaussian noise for mutation
-            noise = tf.random.normal(shape=weights.shape, mean=0.0, stddev=0.1)
+            # Gaussian 노이즈 생성 (표준편차를 0.05로 낮춤)
+            noise = tf.random.normal(shape=weights.shape, mean=0.0, stddev=0.05)
             
-            # Apply mutations where the mask is True
+            # 마스크가 True인 위치에만 노이즈를 적용
             mutated_weights = tf.where(mutation_mask, weights + noise, weights)
             
-            # Update the individual's weights
+            # 변이된 가중치를 개체에 설정
             individual.set_weights_flat(mutated_weights.numpy())
 
     def create_next_generation(self):
         new_population = []
         
-        # Elitism: retain the top 2 individuals
+        # 엘리트 보존: 상위 5명의 개체를 유지
         sorted_pop = sorted(self.population, key=lambda ind: ind.fitness, reverse=True)
-        elite = sorted_pop[:2]
+        elite = sorted_pop[:5]
         new_population.extend(elite)
         
-        # Fill the rest of the population
+        # 나머지 인구 채우기
         while len(new_population) < self.pop_size:
             parent1, parent2 = self.select_parents()
             child = self.crossover(parent1, parent2)
-            if random.random() < 0.8:  # Crossover rate 80%
+            if random.random() < 0.8:  # 교차율 80%
                 child = self.crossover(parent1, parent2)
             self.mutate(child)
             new_population.append(child)
         
         with self.lock:
             self.population = new_population[:self.pop_size]
+
+
 
     def save_population(self):
         # Collect data within the lock

@@ -38,6 +38,7 @@ class Block:
                 (2,0), (2,1), (2,2)
             ], "Block11")  # 3x3 Square
         ]
+        random.seed(10)
         return [Block(shape, name) for shape, name in predefined_shapes]
 
     @staticmethod

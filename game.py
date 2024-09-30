@@ -22,7 +22,7 @@ class Game:
         Initializes and shuffles the available_blocks pool.
         """
         self.available_blocks = [block for block in Block.get_all_shapes()]
-        random.shuffle(self.available_blocks)
+        # random.shuffle(self.available_blocks)
 
     def _draw_blocks(self, count):
         blocks = []
