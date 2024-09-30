@@ -20,17 +20,15 @@ class Individual:
         self.fitness = 0
 
     def create_model(self):
-        inputs = tf.keras.Input(shape=(8, 8, 1)) # type: ignore
-        x = tf.keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(inputs) # type: ignore
-        x = tf.keras.layers.MaxPooling2D((2, 2))(x) # type: ignore
-        x = tf.keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x) # type: ignore
-        x = tf.keras.layers.MaxPooling2D((2, 2))(x) # type: ignore
-        x = tf.keras.layers.Flatten()(x) # type: ignore
-        x = tf.keras.layers.Dense(256, activation='relu')(x) # type: ignore
+        inputs = tf.keras.Input(shape=(64 + 30,))  # type: ignore
+        x = tf.keras.layers.Dense(64, activation='relu')(inputs) # type: ignore    
         x = tf.keras.layers.Dense(128, activation='relu')(x) # type: ignore
+        x = tf.keras.layers.Dense(128, activation='relu')(x) # type: ignore
+        x = tf.keras.layers.Dense(64, activation='relu')(x) # type: ignore
         outputs = tf.keras.layers.Dense(3, activation='linear')(x) # type: ignore
         model = tf.keras.Model(inputs=inputs, outputs=outputs) # type: ignore
         return model
+
 
 
     def randomize_weights(self):
