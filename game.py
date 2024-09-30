@@ -127,6 +127,19 @@ class Game:
                 return False
         return True
 
+    def get_valid_moves(self):
+        """
+        Returns a list of all possible valid moves in the current game state.
+        Each move is represented as a tuple: (block_index, x, y)
+        """
+        valid_moves = []
+        for block_index, block in enumerate(self.current_blocks):
+            for x in range(self.board_size):
+                for y in range(self.board_size):
+                    if self.can_place(block, x, y):
+                        valid_moves.append((block_index, x, y))
+        return valid_moves
+
     def get_score(self):
         return self.score_manager.get_score()
 
@@ -152,7 +165,7 @@ class Game:
             while attempts < max_attempts:
                 attempts += 1
                 # Strategy defines how to pick block and position
-                action = self.strategy.decide_action(self) # type: ignore
+                action = self.strategy.decide_action(self)  # type: ignore
                 if not action:
                     # No action possible, set game over
                     self.game_over = True
