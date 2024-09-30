@@ -258,7 +258,7 @@ class GeneticAlgorithm:
         
         # 엘리트 보존: 상위 5명의 개체를 유지
         sorted_pop = sorted(self.population, key=lambda ind: ind.fitness, reverse=True)
-        elite = sorted_pop[:5]
+        elite = sorted_pop[:4]
         new_population.extend(elite)
         
         # 나머지 인구 채우기
